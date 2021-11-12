@@ -34,9 +34,10 @@ const Game = (function () {
 
     function render() {
       _clearPreviousRender();
-      for (let i = 0; i < Gameboard.get().length; i++) {
-        display[i].textContent = Gameboard.get()[i];
-      }
+      console.log(this);
+      display.forEach( (cell, index) => {
+        cell.textContent = Gameboard.get()[index];
+      });
     }
   
     return {getDisplay, render};
@@ -45,8 +46,10 @@ const Game = (function () {
 
   //Game-specific properties and methods
   let player = 'x';
+  let player1 = 'Player 1'; //player1 is x
+  let player2 = 'Player 2'; //player2 is o
 
-  function _switchPlayer () {
+  function _switchPlayer() {
     if (player === 'x') {
       player = 'o';
     } else {
@@ -54,26 +57,60 @@ const Game = (function () {
     }
   }
 
-  function allowPlayerSelection () { //initializes a two-player game 
-    DisplayController.getDisplay().forEach( (cell, index) => cell.addEventListener('click', () => {
+  function _computerSelect() {
+    //computer selection code
+    _switchPlayer();
+  }
+
+  function playAgainstFriends(index) { //initializes a two-player game 
       Gameboard.set(index, player);
       DisplayController.render();
-      _switchPlayer(); //could make another method that replaces _switchPlayer with a computerSelect() function to play against a computer
+      _switchPlayer();
       if (!Gameboard.get().includes('')) {
         Gameboard.reset();//should be replaced with a gameEnd function. GameEnd
         player = 'x';     //should display a winner, and have a restart button.     
       }                   //restart button should call Gameboard.reset() and 
-    }));                  //DisplayController.Render().
+                          //DisplayController.Render().
+      return;
   }
 
-  return {
-    //DisplayController: {render: DisplayController.render}, //picks a single function out of DisplayController for global use.
-    allowPlayerSelection
-  };
+  function playAgainstMachine(index) { //initializes Man vs Machine
+      Gameboard.set(index, player);
+      DisplayController.render();
+      _switchPlayer();
+      _computerSelect(); //will probably make the computer select all options after the initial selection, throw an if statement here.
+      if (!Gameboard.get().includes('')) {
+        Gameboard.reset();//should be replaced with a gameEnd function. GameEnd
+        player = 'x';     //should display a winner, and have a restart button.     
+      }                   //restart button should call Gameboard.reset() and 
+                          //DisplayController.Render().
+      return;
+  }
+
+  function chooseGameMode(mode) {
+    DisplayController.getDisplay().forEach( (cell, i) => {
+      cell.removeEventListener('click', playAgainstFriends);
+      cell.removeEventListener('click', playAgainstMachine);
+    });
+
+    if (mode === 1) {
+      DisplayController.getDisplay().forEach( (cell, i) => {
+        cell.addEventListener('click', playAgainstFriends.bind(DisplayController, i), {once: true});
+      });
+    } else if (mode === 2) {
+      DisplayController.getDisplay().forEach( (cell, i) => {
+        cell.addEventListener('click', playAgainstMachine.bind(DisplayController, i), {once: true});
+      });
+    }
+  }
+
+
+  return {playAgainstFriends, playAgainstMachine, chooseGameMode, DisplayController};
 })();
 
 
-Game.allowPlayerSelection();
+
+//Game.chooseGameMode(1);
 
 //if 012, 345, 678, 048, or 246 are all the same, win.
 //if array.length = 8 && ^^ doesn't occur, tie.
