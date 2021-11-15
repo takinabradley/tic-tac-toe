@@ -24,7 +24,7 @@ const Gameboard = (function(){
 const DisplayController = (function() {
   const display = document.querySelectorAll('#grid .cell');
 
-  function _clearPreviousRender () {
+  function _clearLastBoardRender () {
     display.forEach(cell => cell.textContent = '');
   }
   
@@ -32,15 +32,58 @@ const DisplayController = (function() {
     return display;
   }
 
-  function render() {
-    _clearPreviousRender();
-
+  function renderBoard() {
+    _clearLastBoardRender();
     display.forEach( (cell, index) => {
       cell.textContent = Gameboard.get()[index];
     });
   }
 
-  return {getDisplay, render};
+  function displayWinner(winner) {
+    winnerDisplay = document.querySelector('#display');
+    if (winner !== 'tie') {
+      winnerDisplay.textContent = `${winner} Wins!`;
+    } else {
+      winnerDisplay.textContent = `Tie!`;
+    }
+  }
+
+  function removeWinner() {
+    winnerDisplay = document.querySelector('#display');
+    winnerDisplay.innerHTML = '';
+  }
+
+  function displayButtons() {
+    buttonDisplay = document.querySelector('#buttons');
+
+    friendsBtn = document.createElement('button');
+    friendsBtn.classList.add('friends');
+    friendsBtn.textContent = 'Play Against Friends'
+    buttonDisplay.appendChild(friendsBtn);
+
+    computerBtn = document.createElement('button');
+    computerBtn.classList.add('computer');
+    computerBtn.textContent = 'Play Against Computer';
+    buttonDisplay.appendChild(computerBtn);
+
+    buttons = document.querySelectorAll('#buttons button')
+    buttons.forEach(button => {
+      button.addEventListener('click', Game.startGame);
+    });
+  }
+
+  function removeButtons() {
+    buttonDisplay = document.querySelector('#buttons');
+    buttons = document.querySelectorAll('#buttons button')
+
+    buttons.forEach(button => {
+      button.addEventListener('click', Game.startGame);
+    });
+
+    buttonDisplay.innerHTML = '';
+  }
+
+  return {getDisplay, renderBoard, displayWinner, displayButtons, removeWinner, removeButtons};
 })();
 
 
@@ -61,12 +104,12 @@ const Game = (function () {
       [board[0],board[4],board[8]], [board[2],board[4],board[6]] 
     ];
 
-    let isAllX = (currentValue) => currentValue === 'x';
-    let isAllO = (currentValue) => currentValue === 'o';
+    let isX = (currentValue) => currentValue === 'x';
+    let isO = (currentValue) => currentValue === 'o';
     let isNotEmpty = (currentValue) => currentValue !== '';
 
     winLines.forEach(line => {
-      if (line.every(isAllX) || line.every(isAllO)) {
+      if (line.every(isX) || line.every(isO)) {
         if (line.includes('x')) {
           winner = player1;
           return;
@@ -91,28 +134,39 @@ const Game = (function () {
   }
 
   function _computerSelect() {
-    availableCells= [];
+    availableCells = [];
     Gameboard.get().forEach( (cell, index) => {
       if(cell === '') availableCells.push(index);
     });
-    Gameboard.set(availableCells[Math.floor(Math.random() * availableCells.length)], player) //need to get all *available* slots.
-    DisplayController.render();
+    randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+    DisplayController.getDisplay()[randomCell].removeEventListener('click', _playAgainstComputer);
+    Gameboard.set(randomCell, player) //need to get all *available* slots.
+    DisplayController.renderBoard();
     _switchPlayer();
   }
 
-  function _gameEnd() {
-    Gameboard.reset(); //
+  function _gameEnd() { //maybe all removing of event listeners should happen here.
+    DisplayController.getDisplay().forEach( (cell) => {
+      cell.removeEventListener('click', _playAgainstFriends);
+      cell.removeEventListener('click', _playAgainstComputer);
+    });
+
+    DisplayController.displayWinner(_testForWinner());
+    Gameboard.reset();
     player = 'x';
+
+    DisplayController.displayButtons();
+    //startGame
 
     //gameEnd should display a winner, and have a restart button.     
     //restart button should call Gameboard.reset() and 
-    //DisplayController.Render().*
+    //DisplayController.renderBoard().*
   }
 
   function _playAgainstFriends(e) { //initializes a two-player game
     const index = e.target.getAttribute('data-key');
     Gameboard.set(index, player);
-    DisplayController.render();
+    DisplayController.renderBoard();
     _switchPlayer();
     if (_testForWinner() !== 'none') _gameEnd()
   }
@@ -125,43 +179,41 @@ const Game = (function () {
         _gameEnd()
       }
     };
-
+    //player turn//
     Gameboard.set(index, player);
-    DisplayController.render();
+    DisplayController.renderBoard();
     _switchPlayer();
     if (_testForWinner() !== 'none') {
       _gameEnd();
       return;
     }
-    //setTimeout(() => {computerTurn()}, 500);
-    setTimeout(computerTurn, 500);
-    //does this technically return the function before computerTurn runs?
+    //computer Turn
+    setTimeout(computerTurn, 100);
   }
 
-  function chooseGameMode(mode) {
-    DisplayController.getDisplay().forEach( (cell) => {
-      cell.removeEventListener('click', _playAgainstFriends);
-      cell.removeEventListener('click', _playAgainstComputer);
-    });
-
-    if (mode === 'friends') {
+  function startGame(e) {
+    if (e.target.classList.contains('friends')) {
       DisplayController.getDisplay().forEach( (cell) => {
-        cell.addEventListener('click', _playAgainstFriends)
+        cell.addEventListener('click', _playAgainstFriends, {once: true})
       });
-    } else if (mode === 'computer') {
+    } else if (e.target.classList.contains('computer')) {
       DisplayController.getDisplay().forEach( (cell) => {
-        cell.addEventListener('click', _playAgainstComputer)
+        cell.addEventListener('click', _playAgainstComputer, {once: true})
       });
     } else {
       return;
     }
+
+    DisplayController.removeButtons();
+    DisplayController.removeWinner();
+    DisplayController.renderBoard();
   } //Look for way to achieve this without data-keys.
+    //(pass index of cell to _playAgainstComputer instead of the event)
 
-
-  return {chooseGameMode, _testForWinner};
+  return {startGame, _testForWinner};
 })();
 
-Game.chooseGameMode('computer');
+DisplayController.displayButtons();
 
 //allow players to put in their names, include a button to start/restart the 
 //game and add a display element that congratulates the winning player!
