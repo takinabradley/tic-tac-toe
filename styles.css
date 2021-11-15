@@ -11,14 +11,14 @@ html {
 body {
   height: 100%;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;;
   align-items: center;
   flex-direction: column;
   font-size: 5vh;
   font-weight: bold;
   font-family: sans-serif;
   color: crimson;
-  
+  gap: 50px;
 }
 
 #grid {
@@ -55,5 +55,5 @@ body {
 
 #buttons button {
   font-size: 3vh;
-  height: 5vh;
+  height: 7vh;
 }
