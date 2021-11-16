@@ -23,9 +23,39 @@ const Gameboard = (function(){
 
 const DisplayController = (function() {
   const display = document.querySelectorAll('#grid .cell');
+  const winnerDisplay = document.querySelector('#display');
+  const buttonDisplay = document.querySelector('#buttons');
 
   function _clearLastBoardRender () {
     display.forEach(cell => cell.textContent = '');
+  }
+
+  function _getNames() {
+    removeButtons();
+    
+    player1Input = document.createElement('input');
+    player1Input.setAttribute('placeholder', 'Player 1');
+    player1Input.setAttribute('value', 'Player 1')
+
+    player2Input = document.createElement('input');
+    player2Input.setAttribute('placeholder', 'Player 2');
+    player2Input.setAttribute('value', 'Player 2')
+
+    submitBtn = document.createElement('button')
+    submitBtn.classList.add('friends');
+    submitBtn.textContent = 'Start!';
+
+    buttonDisplay.appendChild(player1Input);
+    buttonDisplay.appendChild(player2Input);
+    buttonDisplay.appendChild(submitBtn);
+
+    submitBtn.addEventListener('click', () => {
+      Game.setPlayerName(1, player1Input.value);
+      Game.setPlayerName(2, player2Input.value);
+    });
+
+    submitBtn.addEventListener('click', Game.startGame);
+    
   }
   
   function getDisplay () {
@@ -40,40 +70,42 @@ const DisplayController = (function() {
   }
 
   function displayWinner(winner) {
-    winnerDisplay = document.querySelector('#display');
     if (winner !== 'tie') {
-      winnerDisplay.textContent = `${winner} Wins!`;
+      if (winner === 'You') {
+        winnerDisplay.textContent = `You Win!`;
+      } else {
+        winnerDisplay.textContent = `${winner} Wins!`;
+      }
     } else {
       winnerDisplay.textContent = `Tie!`;
     }
   }
 
-  function removeWinner() {
-    winnerDisplay = document.querySelector('#display');
+  function clearWinner() {
     winnerDisplay.innerHTML = '';
   }
 
   function displayButtons() {
-    buttonDisplay = document.querySelector('#buttons');
-
     friendsBtn = document.createElement('button');
     friendsBtn.classList.add('friends');
     friendsBtn.textContent = 'Play Against Friends'
     buttonDisplay.appendChild(friendsBtn);
+    friendsBtn.addEventListener('click', _getNames);
 
     computerBtn = document.createElement('button');
     computerBtn.classList.add('computer');
     computerBtn.textContent = 'Play Against Computer';
     buttonDisplay.appendChild(computerBtn);
+    computerBtn.addEventListener('click', Game.startGame)
 
-    buttons = document.querySelectorAll('#buttons button')
-    buttons.forEach(button => {
-      button.addEventListener('click', Game.startGame);
-    });
+    //buttons = document.querySelectorAll('#buttons button')
+    //
+    //buttons.forEach(button => {
+    //  button.addEventListener('click', Game.startGame);
+    //});
   }
 
   function removeButtons() {
-    buttonDisplay = document.querySelector('#buttons');
     buttons = document.querySelectorAll('#buttons button')
 
     buttons.forEach(button => {
@@ -83,7 +115,7 @@ const DisplayController = (function() {
     buttonDisplay.innerHTML = '';
   }
 
-  return {getDisplay, renderBoard, displayWinner, displayButtons, removeWinner, removeButtons};
+  return {getDisplay, renderBoard, displayWinner, displayButtons, clearWinner, removeButtons};
 })();
 
 
@@ -140,7 +172,7 @@ const Game = (function () {
     });
     randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
     DisplayController.getDisplay()[randomCell].removeEventListener('click', _playAgainstComputer);
-    Gameboard.set(randomCell, player) //need to get all *available* slots.
+    Gameboard.set(randomCell, player) //selects randomly from available cells.
     DisplayController.renderBoard();
     _switchPlayer();
   }
@@ -156,11 +188,6 @@ const Game = (function () {
     player = 'x';
 
     DisplayController.displayButtons();
-    //startGame
-
-    //gameEnd should display a winner, and have a restart button.     
-    //restart button should call Gameboard.reset() and 
-    //DisplayController.renderBoard().*
   }
 
   function _playAgainstFriends(e) { //initializes a two-player game
@@ -173,12 +200,7 @@ const Game = (function () {
 
   function _playAgainstComputer(e) { //initializes Man vs Machine
     const index = e.target.getAttribute('data-key');
-    const computerTurn = () => {
-      _computerSelect();
-      if (_testForWinner() !== 'none') {
-        _gameEnd()
-      }
-    };
+
     //player turn//
     Gameboard.set(index, player);
     DisplayController.renderBoard();
@@ -188,7 +210,12 @@ const Game = (function () {
       return;
     }
     //computer Turn
-    setTimeout(computerTurn, 100);
+    setTimeout( () => {
+      _computerSelect();
+      if (_testForWinner() !== 'none') {
+        _gameEnd()
+      }
+    }, 50);
   }
 
   function startGame(e) {
@@ -197,26 +224,30 @@ const Game = (function () {
         cell.addEventListener('click', _playAgainstFriends, {once: true})
       });
     } else if (e.target.classList.contains('computer')) {
+      player1 = 'You';
+      player2 = 'Computer';
       DisplayController.getDisplay().forEach( (cell) => {
         cell.addEventListener('click', _playAgainstComputer, {once: true})
       });
-    } else {
-      return;
     }
 
     DisplayController.removeButtons();
-    DisplayController.removeWinner();
+    DisplayController.clearWinner();
     DisplayController.renderBoard();
   } //Look for way to achieve this without data-keys.
     //(pass index of cell to _playAgainstComputer instead of the event)
 
-  return {startGame, _testForWinner};
+  function setPlayerName(player, name) {
+    if (player === 1) {
+      player1 = name;
+    } else if (player === 2) {
+      player2 = name;
+    } else {
+      return;
+    }
+  }
+
+  return {startGame, setPlayerName};
 })();
 
 DisplayController.displayButtons();
-
-//allow players to put in their names, include a button to start/restart the 
-//game and add a display element that congratulates the winning player!
-
-//find out why nested modules are declared in global space if not initialized 
-//with var, let, or const.

@@ -57,3 +57,10 @@ body {
   font-size: 3vh;
   height: 7vh;
 }
+
+#buttons input {
+  font-size: 3vh;
+  height: 7vh;
+  width: 35vw;
+}
+
