@@ -30,18 +30,18 @@ const DisplayController = (function() {
     display.forEach(cell => cell.textContent = '');
   }
 
-  function _getNames() {
+  function _displayNameForm() {
     removeButtons();
     
-    player1Input = document.createElement('input');
+    const player1Input = document.createElement('input');
     player1Input.setAttribute('placeholder', 'Player 1');
     player1Input.setAttribute('value', 'Player 1')
 
-    player2Input = document.createElement('input');
+    const player2Input = document.createElement('input');
     player2Input.setAttribute('placeholder', 'Player 2');
     player2Input.setAttribute('value', 'Player 2')
 
-    submitBtn = document.createElement('button')
+    const submitBtn = document.createElement('button')
     submitBtn.classList.add('friends');
     submitBtn.textContent = 'Start!';
 
@@ -86,27 +86,20 @@ const DisplayController = (function() {
   }
 
   function displayButtons() {
-    friendsBtn = document.createElement('button');
-    friendsBtn.classList.add('friends');
+    const friendsBtn = document.createElement('button');
     friendsBtn.textContent = 'Play Against Friends'
     buttonDisplay.appendChild(friendsBtn);
-    friendsBtn.addEventListener('click', _getNames);
+    friendsBtn.addEventListener('click', _displayNameForm);
 
-    computerBtn = document.createElement('button');
+    const computerBtn = document.createElement('button');
     computerBtn.classList.add('computer');
     computerBtn.textContent = 'Play Against Computer';
     buttonDisplay.appendChild(computerBtn);
     computerBtn.addEventListener('click', Game.startGame)
-
-    //buttons = document.querySelectorAll('#buttons button')
-    //
-    //buttons.forEach(button => {
-    //  button.addEventListener('click', Game.startGame);
-    //});
   }
 
   function removeButtons() {
-    buttons = document.querySelectorAll('#buttons button')
+    const buttons = document.querySelectorAll('#buttons button')
 
     buttons.forEach(button => {
       button.addEventListener('click', Game.startGame);
@@ -166,11 +159,11 @@ const Game = (function () {
   }
 
   function _computerSelect() {
-    availableCells = [];
+    let availableCells = [];
     Gameboard.get().forEach( (cell, index) => {
       if(cell === '') availableCells.push(index);
     });
-    randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
+    const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
     DisplayController.getDisplay()[randomCell].removeEventListener('click', _playAgainstComputer);
     Gameboard.set(randomCell, player) //selects randomly from available cells.
     DisplayController.renderBoard();
@@ -218,7 +211,7 @@ const Game = (function () {
     }, 50);
   }
 
-  function startGame(e) {
+  function startGame(e) { //takes button events from DisplayController
     if (e.target.classList.contains('friends')) {
       DisplayController.getDisplay().forEach( (cell) => {
         cell.addEventListener('click', _playAgainstFriends, {once: true})
