@@ -59,7 +59,7 @@ const DisplayController = (function() {
   }
   
   function getDisplay () {
-    return display;
+    return display; 
   }
 
   function renderBoard() {
@@ -119,9 +119,74 @@ const Game = (function () {
   let player1 = 'Player 1'; //player1 is x
   let player2 = 'Player 2'; //player2 is o
 
-  function _testForWinner() {
+  function minimax(board, player) {
+    //find available cells of each board that passes through the function
+    let availableCells = _getAvailableCells(board);
+
+    //attributes a higher score to favorable outcomes
+    if(_testForWinner(board) === player1) {
+      return {score: -10};
+    } else if (_testForWinner(board) === player2) {
+      return {score: 10};
+    } else if (_testForWinner(board) === 'tie') {
+      return {score: 0};
+    }
+
+    //apply the score to all available moves and save them
+    let moves = [];
+
+    availableCells.forEach( cell => {
+      let move = {};
+      move.index = cell;
+      board[cell] = player;
+
+
+      if (player === 'o') {
+        let result = minimax(board, 'x');
+        move.score = result.score;
+      } else {
+        let result = minimax(board, 'o');
+        move.score = result.score;
+      }
+  
+      board[cell] = '';
+  
+      moves.push(move);
+    })
+
+    //find most favorable score out of all saved moves
+    let bestMove;
+  
+    if(player === 'o') {
+      let bestScore = Number.NEGATIVE_INFINITY;
+      moves.forEach( (move, indexOfBestScore) => {
+        if (move.score > bestScore) {
+          bestScore = move.score;
+          bestMove = indexOfBestScore;
+        }
+      })
+    } else {
+      let bestScore = Number.POSITIVE_INFINITY;
+      moves.forEach( (move, indexOfBestScore) => {
+        if (move.score < bestScore) {
+          bestScore = move.score;
+          bestMove = indexOfBestScore;
+        }
+      })
+    }
+    //return the best move
+    return moves[bestMove];
+  }
+
+  function _testForWinner(optionalBoard) {
     let winner = 'none';
-    const board = Gameboard.get();
+    let board;
+    if (optionalBoard) {
+      board = optionalBoard;
+    } else {
+      board = Gameboard.get();
+    }
+
     const winLines = [
       [board[0],board[1],board[2]], [board[3],board[4],board[5]],
       [board[6],board[7],board[8]], [board[0],board[3],board[6]],
@@ -146,7 +211,6 @@ const Game = (function () {
     });
 
     if (winner === 'none' && board.every(isNotEmpty)) winner = 'tie';
-    console.log(winner);
     return winner;
   }
 
@@ -158,19 +222,31 @@ const Game = (function () {
     }
   }
 
+  function _getAvailableCells(optionalBoard) {
+    availableCells = [];
+
+    if (optionalBoard) {
+      optionalBoard.forEach( (cell, index) => {
+        if(cell === '') availableCells.push(index);
+      });
+    } else {
+      Gameboard.get().forEach( (cell, index) => {
+        if(cell === '') availableCells.push(index);
+      });
+    }
+
+    return availableCells;
+  }
+
   function _computerSelect() {
-    let availableCells = [];
-    Gameboard.get().forEach( (cell, index) => {
-      if(cell === '') availableCells.push(index);
-    });
-    const randomCell = availableCells[Math.floor(Math.random() * availableCells.length)];
-    DisplayController.getDisplay()[randomCell].removeEventListener('click', _playAgainstComputer);
-    Gameboard.set(randomCell, player) //selects randomly from available cells.
+    let move = minimax(Gameboard.get(), 'o').index;
+    DisplayController.getDisplay()[move].removeEventListener('click', _playAgainstComputer);
+    Gameboard.set(move, player) 
     DisplayController.renderBoard();
     _switchPlayer();
   }
 
-  function _gameEnd() { //maybe all removing of event listeners should happen here.
+  function _gameEnd() {
     DisplayController.getDisplay().forEach( (cell) => {
       cell.removeEventListener('click', _playAgainstFriends);
       cell.removeEventListener('click', _playAgainstComputer);
@@ -223,12 +299,21 @@ const Game = (function () {
         cell.addEventListener('click', _playAgainstComputer, {once: true})
       });
     }
+    //Look for a good way to pass index of cell in nodelist to 
+    //_playAgainstComputer instead of using data-keys. I can't figure out a way
+    //to remove it when I do that. Ex:
+    //  DisplayController.getDisplay().forEach( (cell, index) => {
+    //    eventHandler = () => playAgainstComputer(index);
+    //    cell.addEventListener('click', eventHandler);
+    //  });
+    //can't define this 'eventHandler' outside of forEach() loop because 'index'
+    //doesn't exist outside of it.
+
 
     DisplayController.removeButtons();
     DisplayController.clearWinner();
     DisplayController.renderBoard();
-  } //Look for way to achieve this without data-keys.
-    //(pass index of cell to _playAgainstComputer instead of the event)
+  } 
 
   function setPlayerName(player, name) {
     if (player === 1) {
