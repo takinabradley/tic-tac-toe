@@ -238,10 +238,18 @@ const Game = (function () {
     return availableCells;
   }
 
-  function _computerSelect() {
-    let move = minimax(Gameboard.get(), 'o').index;
-    DisplayController.getDisplay()[move].removeEventListener('click', _playAgainstComputer);
-    Gameboard.set(move, player) 
+  function _computerSelect() {//has a 20% chance of selecting randomly
+    if(Math.random() <= 0.20) {
+      availableCells = _getAvailableCells();
+      move = availableCells[Math.floor(Math.random() * availableCells.length)]
+      DisplayController.getDisplay()[move].removeEventListener('click', _playAgainstComputer);
+      Gameboard.set(move, player)
+    } else {
+      let move = minimax(Gameboard.get(), 'o').index;
+      DisplayController.getDisplay()[move].removeEventListener('click', _playAgainstComputer);
+      Gameboard.set(move, player) 
+    } 
+
     DisplayController.renderBoard();
     _switchPlayer();
   }
